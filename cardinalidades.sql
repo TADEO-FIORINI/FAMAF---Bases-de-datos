@@ -1,0 +1,50 @@
+-- Tablas principales
+CREATE TABLE A (
+    ID INT NOT NULL AUTO_INCREMENT,
+    Avalue INT,
+    PRIMARY KEY (ID)
+);
+
+CREATE TABLE B (
+    ID INT NOT NULL AUTO_INCREMENT,
+    Bvalue INT,
+    PRIMARY KEY (ID)
+);
+
+-- 1:1 (cada A se relaciona con un único B y viceversa)
+CREATE TABLE OneToOne (
+    IDA INT NOT NULL,
+    IDB INT NOT NULL,
+    PRIMARY KEY (IDA, IDB),
+    UNIQUE (IDA),
+    UNIQUE (IDB),
+    FOREIGN KEY (IDA) REFERENCES A(ID),
+    FOREIGN KEY (IDB) REFERENCES B(ID)
+);
+
+-- 1:N (un A puede tener muchos B)
+CREATE TABLE OneToMany (
+    IDB INT NOT NULL,
+    IDA INT NOT NULL,
+    PRIMARY KEY (IDB),
+    FOREIGN KEY (IDB) REFERENCES B(ID),
+    FOREIGN KEY (IDA) REFERENCES A(ID)
+);
+
+-- 1:N (un B puede tener muchos A)
+CREATE TABLE ManyToOne (
+    IDA INT NOT NULL,
+    IDB INT NOT NULL,
+    PRIMARY KEY (IDA),
+    FOREIGN KEY (IDA) REFERENCES A(ID),
+    FOREIGN KEY (IDB) REFERENCES B(ID)
+);
+
+-- N:M (muchos A pueden tener muchos B)
+CREATE TABLE ManyToMany (
+    IDA INT NOT NULL,
+    IDB INT NOT NULL,
+    PRIMARY KEY (IDA, IDB),
+    FOREIGN KEY (IDA) REFERENCES A(ID),
+    FOREIGN KEY (IDB) REFERENCES B(ID)
+);
