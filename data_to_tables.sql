@@ -1,6 +1,6 @@
 CREATE DATABASE IF NOT EXISTS world;
 
-USE Wold;
+USE wold;
 
 CREATE TABLE IF NOT EXISTS Country(
     Code varchar(3) NOT NULL,

@@ -57,7 +57,7 @@ SELECT Country.Name, MAX(City.Population)
 FROM City
 JOIN Country
 ON CountryCode = Country.Code
-GROUP BY CountryCode;
+GROUP BY CountryCode; --232 rows in set (0,01 sec)
 
 
 SELECT Country.Name, City.Population
@@ -68,17 +68,51 @@ WHERE City.Population = (
     SELECT MAX(Population)
     FROM City
     WHERE CountryCode = Country.Code
-);
+); --232 rows in set (0,57 sec)
 
 
 --7. Listar aquellos países y sus lenguajes no oficiales cuyo porcentaje de hablantes sea mayor al promedio de hablantes de los lenguajes oficiales.
+SELECT Country.Name, Language
+FROM CountryLanguage
+JOIN Country
+ON CountryCode = Country.Code
+WHERE IsOfficial = "F"
+AND Percentage > (
+    SELECT AVG(Percentage)
+    FROM CountryLanguage
+    WHERE CountryCode = Country.Code
+    AND IsOfficial = 'T' 
+);
 
 
 --8. Listar la cantidad de habitantes por continente ordenado en forma descendente.
+SELECT Continent.Name AS CountryName,
+SUM(Country.Population) AS ContinentPopulation
+FROM Country
+JOIN Continent
+ON Continent = Continent.Name
+GROUP BY Country.Continent
+ORDER BY ContinentPopulation DESC; 
 
 
 --9. Listar el promedio de esperanza de vida (LifeExpectancy) por continente con una esperanza de vida entre 40 y 70 años.
+SELECT Continent.Name AS ContinentName,
+AVG(Country.LifeExpentancy) AS ContinentLifeExpentancyAverage
+FROM Country
+JOIN Continent
+WHERE Continent = Continent.Name
+GROUP BY Country.Continent
+HAVING ContinentLifeExpentancyAverage
+BETWEEN 40 AND 70;
 
 
---10. Listar la cantidad máxima, mínima, promedio y suma de habitantes por continente.
-
+--10. Listar la cantidad máxima, mínima, promedio y suma de habitantes por continente respecto a sus paises.
+SELECT Continent.Name AS ContinentName,
+MAX(Country.Population) AS ContinentMaxPopulation,
+MIN(Country.Population) AS ContinentMinPopulation,
+AVG(Country.Population) AS ContinentAvgPopulation,
+SUM(Country.Population) AS ContinentSumPopulation
+FROM Country
+JOIN Continent
+ON Continent = Continent.Name
+GROUP BY Country.Continent;
