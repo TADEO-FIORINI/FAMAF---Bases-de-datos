@@ -71,21 +71,82 @@ SET c.premium_customer = 'T';
 -- 5. Listar, ordenados por cantidad de películas (de mayor a menor), los distintos ratings de 
 -- las películas existentes (Hint: rating se refiere en este caso a la clasificación según edad: G, PG, R, etc).
 
+SELECT rating, COUNT(*) AS rating_films
+FROM film
+GROUP BY rating
+ORDER BY rating_films DESC;
+
+
+-- MIO. Listar las categorias junto a sus cantidades de pelicualas de mayor a menor
+DELIMITER $$
+CREATE FUNCTION movies_per_category(_category_id SMALLINT)
+RETURNS SMALLINT
+DETERMINISTIC
+BEGIN
+DECLARE m_count SMALLINT;
+SET m_count = (
+    SELECT COUNT(*)
+    FROM film_category
+    WHERE category_id = _category_id
+);
+RETURN m_count;
+END $$
+DELIMITER ;
+
+SELECT name, movies_per_rating(category_id)
+FROM category
+ORDER BY movies_per_rating(category_id) DESC;
+
 
 -- 6. ¿Cuáles fueron la primera y última fecha donde hubo pagos?
+SELECT MIN(payment_date), MAX(payment_date)
+FROM payment;
 
 
 -- 7. Calcule, por cada mes, el promedio de pagos (Hint: vea la manera de extraer el nombre del mes de una fecha).
+SELECT MONTHNAME(payment_date), YEAR(payment_date), AVG(amount)
+FROM payment
+GROUP BY MONTHNAME(payment_date), YEAR(payment_date);
 
 
 -- 8. Listar los 10 distritos que tuvieron mayor cantidad de alquileres (con la cantidad total de alquileres).
+SELECT city.city AS city, COUNT(city.city_id) AS total_rentals
+FROM rental
+JOIN customer ON rental.customer_id = customer.customer_id
+JOIN address ON customer.address_id = address.address_id
+JOIN city ON address.city_id = city.city_id
+GROUP BY city.city_id
+ORDER BY total_rentals DESC
+LIMIT 10;
 
 
--- 9. Modifique la table `inventory_id` agregando una columna `stock` que sea un número entero y representa la cantidad de copias de una misma película que tiene determinada tienda. El número por defecto debería ser 5 copias.
+-- 9. Modifique la table `inventory_id` agregando una columna `stock` que sea un número entero y representa la cantidad 
+-- de copias de una misma película que tiene determinada tienda. El número por defecto debería ser 5 copias.
+ALTER TABLE inventory
+ADD COLUMN stock INTEGER DEFAULT 5; 
 
 
--- 10. Cree un trigger `update_stock` que, cada vez que se agregue un nuevo registro a la tabla rental, haga un update en la tabla `inventory` restando una copia al stock de la película rentada (Hint: revisar que el rental no tiene información directa sobre la tienda, sino sobre el cliente, que está asociado a una tienda en particular).
+-- 10. Cree un trigger `update_stock` que, cada vez que se agregue un nuevo registro a la tabla rental, haga un update en la 
+-- tabla `inventory` restando una copia al stock de la película rentada (Hint: revisar que el rental no tiene información 
+-- directa sobre la tienda, sino sobre el cliente, que está asociado a una tienda en particular).
+DELIMITER $$
+CREATE TRIGGER update_stock BEFORE INSERT ON rental 
+FOR EACH ROW
+BEGIN 
+    UPDATE inventory
+    SET inventory.stock = inventory.stock - 1
+    WHERE inventory_id = NEW.inventory_id;
+END $$
+DELIMITER ;
 
+INSERT INTO rental (rental_date, inventory_id, customer_id, return_date, staff_id)
+VALUES (NOW(), 1, 1, NULL, 1);
+
+SELECT * FROM inventory WHERE inventory_id = 1; -- se resto uno, el trigger funciona
+
+-- INSERT --> NEW
+-- DELETE --> OLD
+-- UPDATE --> OLD, NEW
 
 -- 11. Cree una tabla `fines` que tenga dos campos: `rental_id` y `amount`. El primero es una clave foránea a la tabla rental y el segundo es un valor numérico con dos decimales.
 
