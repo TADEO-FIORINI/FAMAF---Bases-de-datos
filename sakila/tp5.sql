@@ -148,16 +148,47 @@ SELECT * FROM inventory WHERE inventory_id = 1; -- se resto uno, el trigger func
 -- DELETE --> OLD
 -- UPDATE --> OLD, NEW
 
--- 11. Cree una tabla `fines` que tenga dos campos: `rental_id` y `amount`. El primero es una clave foránea a la tabla rental y el segundo es un valor numérico con dos decimales.
+-- 11. Cree una tabla `fines` que tenga dos campos: `rental_id` y `amount`. El primero es una clave foránea a la tabla rental y el
+-- segundo es un valor numérico con dos decimales.
+
+CREATE TABLE IF NOT EXISTS fines(
+    rental_id INT NOT NULL,
+    amount DECIMAL(10, 2),
+    PRIMARY KEY (rental_id),
+    FOREIGN KEY (rental_id) REFERENCES rental(rental_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
--- 12. Cree un procedimiento `check_date_and_fine` que revise la tabla `rental` y cree un registro en la tabla `fines` por cada `rental` cuya devolución (return_date) haya tardado más de 3 días (comparación con rental_date). El valor de la multa será el número de días de retraso multiplicado por 1.5.
+-- 12. Cree un procedimiento `check_date_and_fine` que revise la tabla `rental` y cree un registro en la tabla `fines` por cada 
+-- `rental` cuya devolución (return_date) haya tardado más de 3 días (comparación con rental_date). El valor de la multa será el 
+-- número de días de retraso multiplicado por 1.5.
 
+DELIMITER $$
+CREATE PROCEDURE check_date_and_fine()
+BEGIN
+INSERT INTO fines(rental_id, amount) 
+SELECT rental_id, DATEDIFF(return_date, rental_date) * 1.5
+FROM rental
+WHERE DATEDIFF(return_date, rental_date) > 3;
+END $$
+DELIMITER ;
+
+CALL check_date_and_fine();
 
 -- 13. Crear un rol `employee` que tenga acceso de inserción, eliminación y actualización a la tabla `rental`.
-
+CREATE ROLE employee;
+GRANT INSERT, DELETE, UPDATE ON sakila.rental TO employee;
 
 -- 14. Revocar el acceso de eliminación a `employee` y crear un rol `administrator` que tenga todos los privilegios sobre la BD `sakila`.
-
+REVOKE DELETE ON sakila.rental FROM employee;
+CREATE ROLE administrator;
+GRANT ALL PRIVILEGES ON sakila.* TO administrator;
 
 -- 15. Crear dos roles de empleado. A uno asignarle los permisos de `employee` y al otro de `administrator`.
+CREATE USER 'empleado1'@'localhost' IDENTIFIED BY 'clave1';
+CREATE USER 'empleado2'@'localhost' IDENTIFIED BY 'clave2';
+
+GRANT employee TO 'empleado1'@'localhost';
+GRANT administrator TO 'empleado2'@'localhost';
+
+SHOW GRANTS FOR "employee";
