@@ -19,3 +19,17 @@ sudo apt update
 sudo apt install mongodb-database-tools
 ```
 
+# Formatear archivo
+
+## Instalar prettier
+
+```sh
+sudo npm install -g prettier
+```
+
+## Aplicar (a un .js)
+
+```sh
+prettier --write file.js
+```
+
