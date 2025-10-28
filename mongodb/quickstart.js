@@ -39,3 +39,6 @@ db.movies.find({ title: { $regex: /dark$/i } })
 db.collection.find({
   field: { $exists: true, $ne: null }
 })
+
+// ver validaciones de una coleccion
+db.getCollectionInfos({ name: "mi_coleccion" })
