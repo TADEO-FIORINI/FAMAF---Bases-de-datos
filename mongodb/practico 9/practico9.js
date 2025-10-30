@@ -477,3 +477,234 @@ db.orderDetails.aggregate([
     },
   },
 ]);
+
+// 9. Crear un modelo de datos en mongodb aplicando las estrategias “Modelo de
+// datos anidados” y Referencias y considerando las siguientes queries.
+
+// i.  Listar título y url, tags y categorías de los artículos dado un user_id
+// ii.  Listar título, url y comentarios que se realizaron en un rango de fechas.
+// iii.  Listar nombre y email dado un id de usuario
+
+// Inserte  algunos  documentos  para  las  colecciones  del  modelo  de  datos.
+// Opcionalmente puede especificar una regla de validación de esquemas  para las
+// colecciones..
+
+`use articles`;
+
+db.createCollection("users", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["name", "email"],
+      properties: {
+        name: {
+          bsonType: "string",
+        },
+        email: {
+          bsonType: "string",
+        },
+      },
+    },
+  },
+});
+
+db.createCollection("categories", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["name"],
+      properties: {
+        name: {
+          bsonType: "string",
+        },
+      },
+    },
+  },
+});
+
+db.createCollection("tags", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["name"],
+      properties: {
+        name: {
+          bsonType: "string",
+        },
+      },
+    },
+  },
+});
+
+db.createCollection("articles", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["user_id", "title", "date", "text", "url"],
+      properties: {
+        user_id: {
+          bsonType: "objectId",
+        },
+        title: {
+          bsonType: "string",
+        },
+        date: {
+          bsonType: "date",
+        },
+        text: {
+          bsonType: "string",
+        },
+        url: {
+          bsonType: "string",
+        },
+        categories: {
+          bsonType: "array",
+          items: {
+            bsonType: "objectId",
+          },
+        },
+        tags: {
+          bsonType: "array",
+          items: {
+            bsonType: "objectId",
+          },
+        },
+        comments: {
+          bsonType: "array",
+          items: {
+            bsonType: "object",
+            required: ["user_id", "date", "text"],
+            properties: {
+              user_id: {
+                bsonType: "objectId",
+              },
+              date: {
+                bsonType: "date",
+              },
+              text: {
+                bsonType: "string",
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+});
+
+db.users.insertOne({
+  name: "user1",
+  email: "user1@gmail.com",
+});
+// ObjectId('6903e16d53d41628bd544ca7')
+
+db.categories.insertMany([
+  {
+    name: "category1",
+  },
+  {
+    name: "category2",
+  },
+]);
+// ObjectId('6903e1a653d41628bd544ca8')
+// ObjectId('6903e1a653d41628bd544ca9')
+
+db.tags.insertMany([
+  {
+    name: "tag1",
+  },
+  {
+    name: "tag2",
+  },
+]);
+// ObjectId('6903e26a53d41628bd544caa')
+// ObjectId('6903e26a53d41628bd544cab')
+
+db.articles.insertOne({
+  user_id: ObjectId("6903e16d53d41628bd544ca7"),
+  title: "Article 1",
+  date: new Date(),
+  text: "Article 1 text",
+  url: "https://article1.com",
+  categories: [
+    ObjectId("6903e1a653d41628bd544ca8"),
+    ObjectId("6903e1a653d41628bd544ca9"),
+  ],
+  tags: [
+    ObjectId("6903e26a53d41628bd544caa"),
+    ObjectId("6903e26a53d41628bd544cab"),
+  ],
+  comments: [
+    {
+      user_id: ObjectId("6903e16d53d41628bd544ca7"),
+      date: new Date(),
+      text: "comment 1",
+    },
+    {
+      user_id: ObjectId("6903e16d53d41628bd544ca7"),
+      date: new Date(),
+      text: "comment 2",
+    },
+  ],
+});
+
+// querie I
+db.articles.aggregate([
+  {
+    $match: {
+      user_id: ObjectId("6903e16d53d41628bd544ca7"),
+    },
+  },
+  {
+    $lookup: {
+      from: "categories",
+      foreignField: "_id",
+      localField: "categories",
+      as: "categories_info",
+    },
+  },
+  {
+    $lookup: {
+      from: "tags",
+      foreignField: "_id",
+      localField: "tags",
+      as: "tags_info",
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      title: 1,
+      url: 1,
+      tags: "$tags_info.name",
+      categories: "$categories_info.name",
+    },
+  },
+]);
+
+// querie II
+db.articles.aggregate([
+  {
+    $match: {
+      comments: {
+        $elemMatch: {
+          date: { $gte: new Date("2025-10-29"), $lt: new Date("2025-10-31") },
+        },
+      },
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      title: 1,
+      url: 1,
+      comments: 1,
+    },
+  },
+]);
+
+// querie III
+db.users.findOne(
+  { _id: ObjectId("6903e16d53d41628bd544ca7") },
+  { _id: 0, name: 1, email: 1 },
+);
