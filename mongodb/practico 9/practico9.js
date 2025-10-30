@@ -238,3 +238,242 @@ db.createCollection("userProfiles", {
     },
   },
 });
+
+// 6.  Identificar los distintos tipos de relaciones (One-To-One, One-To-Many) en las
+// colecciones movies y comments. Determinar si se usó documentos anidados o
+// referencias en cada relación y justificar la razón.
+
+// En los documentos de la coleccion `movies`, tenemos anidado el documento `imdb` con props
+// `rating` (double), `votes` (int) y `id` (int). Es una relacion One-To-One ya que `imdb`
+// es un unico documento, es decir no se encuentra dentro de un arreglo.
+
+// En los documentos `comments`, tenemos dos relaciones One-To-Many diferentes. Por un lado,
+// tenemos `name` y `email`, que son referencias a un documento de la coleccion `user`, es
+// decir un usuario puede tener varios comentarios. Por otro lado tenemos `movie_id`, un
+// objectId que referencia a un documento de la coleccion `movies`, esto quiere decir que
+// una pelicula puede tener varios comentarios.
+
+// 7.  Dado el diagrama de la base de datos shop junto con las queries más importantes.
+
+// Queries
+// I.  Listar el id, titulo, y precio de los libros y sus categorías de un autor en particular
+// II.  Cantidad de libros por categorías
+// III.  Listar el nombre y dirección entrega y el monto total (quantity * price) de sus
+// pedidos para un order_id dado.
+
+// Debe crear el modelo de datos en mongodb aplicando las estrategias “Modelo de datos
+// anidados” y Referencias. El modelo de datos debe permitir responder las queries de
+// manera eficiente.
+
+// Inserte algunos documentos para las colecciones del modelo de datos. Opcionalmente
+// puede especificar una regla de validación de esquemas para las colecciones.
+
+// Se  provee el archivo shop.tar.gz que contiene algunos datos que puede usar como
+// ejemplo para los inserts en mongodb.
+
+// Primero creamos una base de datos
+`use shop`;
+
+db.createCollection("books", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["title", "author", "price", "category"],
+      properties: {
+        title: {
+          bsonType: "string",
+        },
+        author: {
+          bsonType: ["string", "null"],
+        },
+        price: {
+          bsonType: "double",
+        },
+        category: {
+          bsonType: "string",
+        },
+      },
+    },
+  },
+});
+
+db.createCollection("orders", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: [
+        "delivery_name",
+        "delivery_address",
+        "cc_name",
+        "cc_number",
+        "cc_expiry",
+      ],
+      properties: {
+        delivery_name: {
+          bsonType: "string",
+        },
+        delivery_address: {
+          bsonType: "string",
+        },
+        cc_name: {
+          bsonType: "string",
+        },
+        cc_number: {
+          bsonType: "string",
+        },
+        cc_expiry: {
+          bsonType: "string",
+        },
+      },
+    },
+  },
+});
+
+db.createCollection("orderDetails", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["order_id", "book_id"],
+      properties: {
+        order_id: {
+          bsonType: "objectId",
+        },
+        book_id: {
+          bsonType: "objectId",
+        },
+      },
+    },
+  },
+});
+
+db.books.insertMany([
+  {
+    title: "Learning MySQL",
+    author: "Jesper Wisborg Krogh",
+    price: 34.31,
+    category: "Web Development",
+  },
+  {
+    title: "JavaScript Next",
+    author: "Raju Gandhi",
+    price: 36.7,
+    category: "Web Development",
+  },
+  {
+    title: "The Complete Robot",
+    author: "Isaac Asimov",
+    price: 12.13,
+    category: "Science Fiction",
+  },
+  {
+    title: "Foundation and Earth",
+    author: "Isaac Asimov",
+    price: 11.07,
+    category: "Science Fiction",
+  },
+  {
+    title: "The Da Vinci Code",
+    author: "Dan Brown",
+    price: 7.99,
+    category: "Historical Mysteries",
+  },
+  {
+    title: "A Column of Fire",
+    author: "Ken Follett",
+    price: 6.99,
+    category: "Historical Mysteries",
+  },
+]);
+
+db.orders.insertOne({
+  delivery_name: "Andrea Le",
+  delivery_address: "Calle Falsa 123, Madrid",
+  cc_name: "Andrea Le",
+  cc_number: "5500000000000004",
+  cc_expiry: "03/27",
+});
+
+db.orderDetails.insertMany([
+  {
+    order_id: ObjectId("6902c34a8dbd253790544cb5"),
+    book_id: ObjectId("6902ad838dbd253790544cad"),
+    quantity: 1,
+  },
+  {
+    order_id: ObjectId("6902c34a8dbd253790544cb5"),
+    book_id: ObjectId("6902ad838dbd253790544cae"),
+    quantity: 2,
+  },
+  {
+    order_id: ObjectId("6902c34a8dbd253790544cb5"),
+    book_id: ObjectId("6902ad838dbd253790544caf"),
+    quantity: 1,
+  },
+  {
+    order_id: ObjectId("6902c34a8dbd253790544cb5"),
+    book_id: ObjectId("6902ad838dbd253790544cb0"),
+    quantity: 4,
+  },
+  {
+    order_id: ObjectId("6902c34a8dbd253790544cb5"),
+    book_id: ObjectId("6902ad838dbd253790544cb1"),
+    quantity: 1,
+  },
+  {
+    order_id: ObjectId("6902c34a8dbd253790544cb5"),
+    book_id: ObjectId("6902ae9a8dbd253790544cb4"),
+    quantity: 3,
+  },
+]);
+
+// la querie III con ObjectId('6902c34a8dbd253790544cb5') deberia dar
+// 1 * 34.31 + 2 * 36.70 + 1 * 12.13 + 4 * 11.07 + 1 * 7.99 + 3 * 6.99
+// que resulta 193.08
+
+// querie I
+db.books.aggregate([
+  { $match: { author: "Isaac Asimov" } },
+  { $project: { _id: 1, title: 1, price: 1, category: 1 } },
+]);
+
+// querie II
+db.books.aggregate([
+  {
+    $group: {
+      _id: "$category",
+      books_count: { $sum: 1 },
+    },
+  },
+]);
+
+// querie III
+db.orderDetails.aggregate([
+  { $match: { order_id: ObjectId("6902c34a8dbd253790544cb5") } },
+  {
+    $lookup: {
+      from: "books",
+      foreignField: "_id",
+      localField: "book_id",
+      as: "books",
+    },
+  },
+  { $unwind: "$books" },
+  { $addFields: { sub_total: { $multiply: ["$quantity", "$books.price"] } } },
+  {
+    $lookup: {
+      from: "orders",
+      foreignField: "_id",
+      localField: "order_id",
+      as: "orders",
+    },
+  },
+  { $unwind: "$orders" },
+  {
+    $group: {
+      _id: "$order_id",
+      delivery_name: { $first: "$orders.delivery_name" },
+      delivery_address: { $first: "$orders.delivery_address" },
+      total: { $sum: "$sub_total" },
+    },
+  },
+]);
