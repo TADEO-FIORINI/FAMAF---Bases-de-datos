@@ -42,3 +42,14 @@ db.collection.find({
 
 // ver validaciones de una coleccion
 db.getCollectionInfos({ name: "mi_coleccion" })
+
+// borrar bd
+db.dropDatabase()
+
+// crear vista
+db.createView("view_name", "collection", [
+  // TODO (pipeline)
+]);
+// borrar vista
+db.view_name.drop();
+

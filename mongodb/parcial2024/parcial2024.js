@@ -79,3 +79,90 @@ db.grades.aggregate([
     },
   },
 ]);
+
+// 2. Actualizar los documentos en la colección grades, ajustando todas las puntuaciones
+// para que estén normalizadas entre 0 y 7
+// La fórmula para la normalización es:
+
+// Por ejemplo:
+// Si un estudiante sacó un 32 y otro sacó un 62, deberían ser actualizadas a:
+// ● 2,24, porque (32/100)*7 = 2,24
+// ● 4,34, porque (62/100)*7 = 4,34
+// HINT: usar updateMany junto con map
+
+db.grades.updateMany({}, [
+  {
+    $set: {
+      scores: {
+        $map: {
+          input: "$scores",
+          as: "scores",
+          in: {
+            type: "$$scores.type",
+            score: { $multiply: [{ $divide: ["$$scores.score", 100] }, 7] },
+          },
+        },
+      },
+    },
+  },
+]);
+
+
+// 3. Crear una vista "top10students_homework" que liste los 10 estudiantes con los
+// mejores promedios para homework. Ordenar por average_homework_score
+// descendiente.
+
+db.createView("top10students_homework", "grades", [
+  {
+    $unwind: "$scores",
+  },
+  {
+    $match: {
+      "scores.type": "homework"
+    }
+  },
+  {
+    $group: {
+      _id: "$student_id",
+      average_homework_score: {
+        $avg: "$scores.score",
+      },
+    },
+  },
+  {
+    $sort: {
+      average_homework_score: -1,
+    },
+  },
+  {
+    $limit: 10,
+  },
+]);
+
+
+db.top10students_homework.find();
+
+// 4. Especificar reglas de validación en la colección grades. El único requerimiento es
+// que se valide que los type de los scores sólo puedan ser de estos tres tipos:
+// [“exam”, “quiz”, “homework”]
+
+db.runCommand({
+  collMod: "grades",
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      properties: {
+        scores: {
+          bsonType: "array",
+          items: {
+            properties: {
+              type: {
+                enum: ["exam", "quiz", "homework"],
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+});
