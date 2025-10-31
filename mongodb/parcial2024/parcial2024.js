@@ -98,7 +98,7 @@ db.grades.updateMany({}, [
           input: "$scores",
           as: "scores",
           in: {
-            type: "$$scores.type",
+            type: "$$scores.type", // si no copiamos el tipo, perdemos el dato
             score: { $multiply: [{ $divide: ["$$scores.score", 100] }, 7] },
           },
         },
@@ -107,6 +107,10 @@ db.grades.updateMany({}, [
   },
 ]);
 
+// si por ejemplo scores es [28, 23, 89] (array de valores simples) podemos hacer directamente
+// in: {
+//   $multiply: [{ $divide: ["$$scores", 100] }, 7]
+// },
 
 // 3. Crear una vista "top10students_homework" que liste los 10 estudiantes con los
 // mejores promedios para homework. Ordenar por average_homework_score
